@@ -12,48 +12,23 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body {
-            background-color: #fff5eb;
-        }
-        .map-container {
-            height: 500px;
-            width: 100%;
-            border-radius: 0.5rem;
-            position: relative;
-        }
-        #map2d, #map3d {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 0.5rem;
-        }
-        #map3d {
-            display: none;
-        }
-        .mapboxgl-canvas {
-            border-radius: 0.5rem;
-        }
+        body { background-color: #fff5eb; }
+        .map-container { height: 500px; width: 100%; border-radius: 0.5rem; position: relative; }
+        #map2d { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0.5rem; }
     </style>
 </head>
 <body>
     <div class="container mx-auto p-4 max-w-6xl">
         <header class="bg-white shadow-lg rounded-lg p-6 mb-4">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-orange-600 flex items-center gap-2">
-                    <i data-lucide="map" class="w-8 h-8"></i>
-                    GPS Tracker
-                </h1>
+                <h1 class="text-2xl font-bold text-orange-600 flex items-center gap-2"><i data-lucide="map" class="w-8 h-8"></i>GPS Tracker</h1>
                 <div class="space-x-4">
                     <input type="file" id="gpxFile" accept=".gpx" class="hidden" onchange="handleFileSelect(event)">
                     <label for="gpxFile" class="bg-orange-500 text-white px-6 py-3 rounded-full cursor-pointer hover:bg-orange-600 flex items-center gap-2 inline-flex">
-                        <i data-lucide="upload" class="w-5 h-5"></i>
-                        Subir GPX
+                        <i data-lucide="upload" class="w-5 h-5"></i>Subir GPX
                     </label>
-                    <button onclick="showRoutesList()" class="px-6 py-3 text-gray-600 hover:text-orange-600 flex items-center gap-2">
-                        <i data-lucide="list" class="w-5 h-5"></i>
-                        Todas las rutas
+                    <button onclick="showRoutes()" class="px-6 py-3 text-gray-600 hover:text-orange-600 flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5"></i>Todas las rutas
                     </button>
                 </div>
             </div>
@@ -62,19 +37,13 @@
         <div class="bg-white shadow-lg rounded-lg p-4 mb-4">
             <div class="flex gap-4">
                 <button id="map2dBtn" class="px-4 py-2 rounded-lg bg-orange-100 text-orange-600 flex items-center gap-2" onclick="switchMap('2d')">
-                    <i data-lucide="map" class="w-4 h-4"></i>
-                    Mapa 2D
-                </button>
-                <button id="map3dBtn" class="px-4 py-2 rounded-lg flex items-center gap-2" onclick="switchMap('3d')">
-                    <i data-lucide="globe" class="w-4 h-4"></i>
-                    Mapa 3D
+                    <i data-lucide="map" class="w-4 h-4"></i>Mapa 2D
                 </button>
             </div>
         </div>
 
         <div class="map-container shadow-lg mb-4">
             <div id="map2d"></div>
-            <div id="map3d"></div>
         </div>
 
         <div id="activityData" class="bg-white shadow-lg rounded-lg p-6">
@@ -86,50 +55,24 @@
     </div>
 
     <script>
-        let map2d = null;
-        let map3d = null;
-        let currentMap = '2d';
-        let routeLayer2d = null;
+        let map2d, currentMap = '2d', routeLayer2d;
 
-        mapboxgl.accessToken = 'pk.eyJ1IjoiYmVybW9uZGV5IiwiYSI6ImNtMnZ4YzNuZzAwcDEycXM0bjUwdmc1OWkifQ.4mUWQlYMt_kH3GfVAptJBA';
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYmVybW9uZGV5IiwiYSI6ImNtMnZ6djVrZzAwbXgycnI0emZmdnlhbmMifQ.hu5QphDZPERnoeI92sDaNQ';
 
         function initMaps() {
             map2d = L.map('map2d').setView([42.7015, 0.8052], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map2d);
-
-            map3d = new mapboxgl.Map({
-                container: 'map3d',
-                style: 'mapbox://styles/mapbox/satellite-streets-v11',
-                center: [0.8052, 42.7015],
-                zoom: 13,
-                pitch: 60,
-                bearing: -30
-            });
-
-            map3d.addControl(new mapboxgl.NavigationControl());
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map2d);
         }
 
         function switchMap(type) {
             if (type === currentMap) return;
             
             const map2dBtn = document.getElementById('map2dBtn');
-            const map3dBtn = document.getElementById('map3dBtn');
             const map2dDiv = document.getElementById('map2d');
-            const map3dDiv = document.getElementById('map3d');
             
             if (type === '2d') {
                 map2dDiv.style.display = 'block';
-                map3dDiv.style.display = 'none';
                 map2dBtn.classList.add('bg-orange-100', 'text-orange-600');
-                map3dBtn.classList.remove('bg-orange-100', 'text-orange-600');
-            } else {
-                map2dDiv.style.display = 'none';
-                map3dDiv.style.display = 'block';
-                map3dBtn.classList.add('bg-orange-100', 'text-orange-600');
-                map2dBtn.classList.remove('bg-orange-100', 'text-orange-600');
-                map3d.resize();
             }
             
             currentMap = type;
@@ -148,41 +91,32 @@
         }
 
         function parseGPX(xmlText) {
-            // GPX parsing code
-            // ...
-            return {
-                distance: /* ... */,
-                elevationGain: /* ... */,
-                elevationLoss: /* ... */,
-                points: /* ... */
-            };
+            // Código de procesamiento de GPX
+            return { distance: /* ... */, elevationGain: /* ... */, elevationLoss: /* ... */, points: /* ... */ };
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            // Distance calculation code
-            // ...
+            // Código de cálculo de distancia
         }
 
         function deg2rad(deg) {
-            // Degrees to radians conversion
-            // ...
+            // Código de conversión de grados a radianes
         }
 
         function showRouteOnMap(points) {
-            // Route visualization code
-            // ...
+            // Código de visualización de la ruta en el mapa
         }
 
         function displayActivityData(data) {
             showRouteOnMap(data.points);
-            // Display activity data
-            // ...
+            // Código para mostrar los datos de la actividad
         }
 
         const Storage = {
-            // Storage management code
-            // ...
+            // Código de gestión de almacenamiento
         };
+
+        initMaps();
     </script>
 </body>
 </html>
