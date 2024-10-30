@@ -148,75 +148,39 @@
         }
 
         function parseGPX(xmlText) {
-            // Código de procesamiento de GPX
+            // GPX parsing code
             // ...
+            return {
+                distance: /* ... */,
+                elevationGain: /* ... */,
+                elevationLoss: /* ... */,
+                points: /* ... */
+            };
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            // Código de cálculo de distancia
+            // Distance calculation code
             // ...
         }
 
         function deg2rad(deg) {
-            // Código de conversión de grados a radianes
+            // Degrees to radians conversion
             // ...
         }
 
         function showRouteOnMap(points) {
-            // Código de visualización de la ruta en el mapa
+            // Route visualization code
             // ...
         }
 
         function displayActivityData(data) {
             showRouteOnMap(data.points);
-
-            Storage.saveRoute({
-                title: 'Nueva Ruta',
-                ...data,
-                temperature: {
-                    min: 8,
-                    max: 16,
-                    avg: 12
-                }
-            });
-
-            const activityDiv = document.getElementById('activityData');
-            activityDiv.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="bg-blue-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-sm text-blue-700 flex items-center gap-2 mb-2">
-                            <i data-lucide="route" class="w-5 h-5"></i>
-                            Distancia
-                        </h3>
-                        <p class="text-3xl font-bold text-blue-900">${data.distance} km</p>
-                    </div>
-                    <div class="bg-green-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-sm text-green-700 flex items-center gap-2 mb-2">
-                            <i data-lucide="trending-up" class="w-5 h-5"></i>
-                            Desnivel +
-                        </h3>
-                        <p class="text-3xl font-bold text-green-900">${data.elevationGain} m</p>
-                    </div>
-                    <div class="bg-red-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-sm text-red-700 flex items-center gap-2 mb-2">
-                            <i data-lucide="trending-down" class="w-5 h-5"></i>
-                            Desnivel -
-                        </h3>
-                        <p class="text-3xl font-bold text-red-900">${data.elevationLoss} m</p>
-                    </div>
-                    <div class="bg-amber-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                        <h3 class="text-sm text-amber-700 flex items-center gap-2 mb-2">
-                            <i data-lucide="thermometer" class="w-5 h-5"></i>
-                            Temperatura
-                        </h3>
-                        <p class="text-3xl font-bold text-amber-900">${data.temperature.min}°C / ${data.temperature.max}°C (${data.temperature.avg}°C)</p>
-                    </div>
-                </div>
-            `;
+            // Display activity data
+            // ...
         }
 
         const Storage = {
-            // Código de gestión de almacenamiento
+            // Storage management code
             // ...
         };
     </script>
