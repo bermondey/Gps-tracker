@@ -6,52 +6,91 @@
     <title>GPS Tracker</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        body {
+            background-color: #fff5eb;
+        }
         .map-container {
-            height: 400px;
+            height: 500px;
             width: 100%;
+            border-radius: 0.5rem;
+            position: relative;
+        }
+        #map2d, #map3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+        #map3d {
+            display: none;
+        }
+        .mapboxgl-canvas {
             border-radius: 0.5rem;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
     <div class="container mx-auto p-4 max-w-6xl">
         <!-- Header -->
-        <header class="bg-white shadow rounded-lg p-4 mb-4">
+        <header class="bg-white shadow-lg rounded-lg p-6 mb-4">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-blue-600">GPS Tracker</h1>
+                <h1 class="text-2xl font-bold text-orange-600 flex items-center gap-2">
+                    <i data-lucide="map" class="w-8 h-8"></i>
+                    GPS Tracker
+                </h1>
                 <div class="space-x-4">
                     <input type="file" id="gpxFile" accept=".gpx" class="hidden" onchange="handleFileSelect(event)">
-                    <label for="gpxFile" class="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-600">
+                    <label for="gpxFile" class="bg-orange-500 text-white px-6 py-3 rounded-full cursor-pointer hover:bg-orange-600 flex items-center gap-2 inline-flex">
+                        <i data-lucide="upload" class="w-5 h-5"></i>
                         Subir GPX
                     </label>
-                    <button onclick="showRoutesList()" class="px-4 py-2 text-gray-600 hover:text-blue-600">
+                    <button onclick="showRoutesList()" class="px-6 py-3 text-gray-600 hover:text-orange-600 flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5"></i>
                         Todas las rutas
                     </button>
                 </div>
             </div>
         </header>
 
-        <!-- Map -->
-        <div id="map" class="map-container mb-4 shadow"></div>
+        <!-- Map Type Selector -->
+        <div class="bg-white shadow-lg rounded-lg p-4 mb-4">
+            <div class="flex gap-4">
+                <button id="map2dBtn" class="px-4 py-2 rounded-lg bg-orange-100 text-orange-600 flex items-center gap-2" onclick="switchMap('2d')">
+                    <i data-lucide="map" class="w-4 h-4"></i>
+                    Mapa 2D
+                </button>
+                <button id="map3dBtn" class="px-4 py-2 rounded-lg flex items-center gap-2" onclick="switchMap('3d')">
+                    <i data-lucide="globe" class="w-4 h-4"></i>
+                    Mapa 3D
+                </button>
+            </div>
+        </div>
+
+        <!-- Maps Container -->
+        <div class="map-container shadow-lg mb-4">
+            <div id="map2d"></div>
+            <div id="map3d"></div>
+        </div>
 
         <!-- Content -->
-        <div id="activityData" class="bg-white shadow rounded-lg p-6">
-            <p class="text-gray-500 text-center">Selecciona un archivo GPX para ver sus datos</p>
+        <div id="activityData" class="bg-white shadow-lg rounded-lg p-6">
+            <div class="text-center py-8">
+                <i data-lucide="upload-cloud" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+                <p class="text-gray-500">Selecciona un archivo GPX para ver sus datos</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Inicialización del mapa
-        let map = L.map('map').setView([42.7015, 0.8052], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-        let routeLayer = null;
-
-        // Storage functions
+        // Storage Management
         const Storage = {
             saveRoute(route) {
                 const routes = this.getAllRoutes();
@@ -88,7 +127,59 @@
             }
         };
 
-        // GPX processing
+        // Map Management
+        let map2d = null;
+        let map3d = null;
+        let currentMap = '2d';
+        let routeLayer2d = null;
+        
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYmVybW9uZGV5IiwiYSI6ImNtMnZ4YzNuZzAwcDEycXM0bjUwdmc1OWkifQ.4mUWQlYMt_kH3GfVAptJBA';
+
+        function initMaps() {
+            // Initialize 2D map
+            map2d = L.map('map2d').setView([42.7015, 0.8052], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map2d);
+
+            // Initialize 3D map
+            map3d = new mapboxgl.Map({
+                container: 'map3d',
+                style: 'mapbox://styles/mapbox/satellite-streets-v11',
+                center: [0.8052, 42.7015],
+                zoom: 13,
+                pitch: 60,
+                bearing: -30
+            });
+
+            map3d.addControl(new mapboxgl.NavigationControl());
+        }
+
+        function switchMap(type) {
+            if (type === currentMap) return;
+            
+            const map2dBtn = document.getElementById('map2dBtn');
+            const map3dBtn = document.getElementById('map3dBtn');
+            const map2dDiv = document.getElementById('map2d');
+            const map3dDiv = document.getElementById('map3d');
+            
+            if (type === '2d') {
+                map2dDiv.style.display = 'block';
+                map3dDiv.style.display = 'none';
+                map2dBtn.classList.add('bg-orange-100', 'text-orange-600');
+                map3dBtn.classList.remove('bg-orange-100', 'text-orange-600');
+            } else {
+                map2dDiv.style.display = 'none';
+                map3dDiv.style.display = 'block';
+                map3dBtn.classList.add('bg-orange-100', 'text-orange-600');
+                map2dBtn.classList.remove('bg-orange-100', 'text-orange-600');
+                map3d.resize();
+            }
+            
+            currentMap = type;
+        }
+
+        // GPX Processing
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -159,24 +250,68 @@
         }
 
         function showRouteOnMap(points) {
-            if (routeLayer) {
-                map.removeLayer(routeLayer);
+            // Show on 2D map
+            if (routeLayer2d) {
+                map2d.removeLayer(routeLayer2d);
             }
-
             const routePoints = points.map(point => [point.lat, point.lon]);
-            routeLayer = L.polyline(routePoints, {
+            routeLayer2d = L.polyline(routePoints, {
                 color: '#ff9800',
                 weight: 4,
                 opacity: 0.8
-            }).addTo(map);
+            }).addTo(map2d);
+            map2d.fitBounds(routeLayer2d.getBounds());
 
-            map.fitBounds(routeLayer.getBounds());
+            // Show on 3D map
+            if (map3d.getSource('route')) {
+                map3d.removeLayer('route');
+                map3d.removeSource('route');
+            }
+
+            const coordinates = points.map(point => ({
+                lon: point.lon,
+                lat: point.lat,
+                alt: point.elevation
+            }));
+
+            map3d.addSource('route', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': {
+                        'type': 'LineString',
+                        'coordinates': coordinates.map(coord => [coord.lon, coord.lat])
+                    }
+                }
+            });
+
+            map3d.addLayer({
+                'id': 'route',
+                'type': 'line',
+                'source': 'route',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#ff9800',
+                    'line-width': 4,
+                    'line-opacity': 0.8
+                }
+            });
+
+            const bounds = new mapboxgl.LngLatBounds();
+            coordinates.forEach(coord => bounds.extend([coord.lon, coord.lat]));
+            map3d.fitBounds(bounds, {
+                padding: 50,
+                pitch: 60
+            });
         }
 
         function displayActivityData(data) {
             showRouteOnMap(data.points);
 
-            // Save route
             Storage.saveRoute({
                 title: 'Nueva Ruta',
                 ...data,
@@ -189,113 +324,34 @@
 
             const activityDiv = document.getElementById('activityData');
             activityDiv.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-blue-50 p-4 rounded-lg">
-                        <h3 class="text-sm text-blue-700">Distancia</h3>
-                        <p class="text-2xl font-bold text-blue-900">${data.distance} km</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-blue-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                        <h3 class="text-sm text-blue-700 flex items-center gap-2 mb-2">
+                            <i data-lucide="route" class="w-5 h-5"></i>
+                            Distancia
+                        </h3>
+                        <p class="text-3xl font-bold text-blue-900">${data.distance} km</p>
                     </div>
-                    <div class="bg-green-50 p-4 rounded-lg">
-                        <h3 class="text-sm text-green-700">Desnivel +</h3>
-                        <p class="text-2xl font-bold text-green-900">${data.elevationGain} m</p>
+                    <div class="bg-green-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                        <h3 class="text-sm text-green-700 flex items-center gap-2 mb-2">
+                            <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            Desnivel +
+                        </h3>
+                        <p class="text-3xl font-bold text-green-900">${data.elevationGain} m</p>
                     </div>
-                    <div class="bg-red-50 p-4 rounded-lg">
-                        <h3 class="text-sm text-red-700">Desnivel -</h3>
-                        <p class="text-2xl font-bold text-red-900">${data.elevationLoss} m</p>
+                    <div class="bg-red-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                        <h3 class="text-sm text-red-700 flex items-center gap-2 mb-2">
+                            <i data-lucide="trending-down" class="w-5 h-5"></i>
+                            Desnivel -
+                        </h3>
+                        <p class="text-3xl font-bold text-red-900">${data.elevationLoss} m</p>
                     </div>
-                    <div class="bg-amber-50 p-4 rounded-lg">
-                        <h3 class="text-sm text-amber-700">Temperatura</h3>
-                        <p class="text-2xl font-bold text-amber-900">12°C</p>
-                        <p class="text-sm text-amber-600">Min: 8°C - Max: 16°C</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showRouteDetails(id) {
-            const route = Storage.getRoute(id);
-            showRouteOnMap(route.points);
-            displayActivityData(route);
-        }
-
-        function deleteRoute(id, event) {
-            event.stopPropagation();
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "Esta acción no se puede deshacer",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Storage.deleteRoute(id);
-                    showRoutesList();
-                }
-            });
-        }
-
-        function editRouteName(id, event) {
-            event.stopPropagation();
-            const route = Storage.getRoute(id);
-            Swal.fire({
-                title: 'Editar nombre',
-                input: 'text',
-                inputValue: route.title,
-                showCancelButton: true,
-                confirmButtonText: 'Guardar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed && result.value) {
-                    Storage.updateRouteName(id, result.value);
-                    showRoutesList();
-                }
-            });
-        }
-
-        function showRoutesList() {
-            const routes = Storage.getAllRoutes();
-            const activityDiv = document.getElementById('activityData');
-            
-            if (routes.length === 0) {
-                activityDiv.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-500">No hay rutas guardadas</p>
-                    </div>
-                `;
-                return;
-            }
-
-            activityDiv.innerHTML = `
-                <div class="space-y-4">
-                    ${routes.map(route => `
-                        <div class="border rounded-lg p-4 hover:bg-gray-50 group" onclick="showRouteDetails(${route.id})">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-semibold">${route.title}</h3>
-                                    <div class="text-sm text-gray-500">
-                                        ${route.distance} km · ${route.elevationGain}m D+ · ${route.elevationLoss}m D-
-                                    </div>
-                                    <div class="text-sm text-gray-500">
-                                        ${new Date(route.date).toLocaleDateString()}
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div class="text-amber-600">${route.temperature.avg}°C</div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="editRouteName(${route.id}, event)" class="p-1 text-blue-600 hover:bg-blue-100 rounded">
-                                            ✏️
-                                        </button>
-                                        <button onclick="deleteRoute(${route.id}, event)" class="p-1 text-red-600 hover:bg-red-100 rounded">
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
+                    <div class="bg-amber-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                        <h3 class="text-sm text-amber-700 flex items-center gap-2 mb-2">
+                            <i data-lucide="thermometer" class="w-5 h-5"></i>
+                            Temperatura
+                        </h3>
+                        <p class="text-3xl font-
             `;
         }
     </script>
